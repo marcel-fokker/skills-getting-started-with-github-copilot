@@ -6,6 +6,7 @@ A super simple FastAPI application that allows students to view and sign up for 
 
 - View all available extracurricular activities
 - Sign up for activities
+- Reject duplicate sign-ups for the same email and activity with HTTP 400
 
 ## Getting Started
 
