@@ -65,3 +65,48 @@ class SignupTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), {"detail": "Activity not found"})
+
+    def test_unregister_removes_only_selected_registration(self):
+        email = activities["Chess Club"]["participants"][0]
+        self.signup("Programming Class", email)
+        before = activities["Chess Club"]["participants"].copy()
+
+        response = self.client.delete(
+            "/activities/Chess Club/participants", params={"email": email}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(), {"message": f"Unregistered {email} from Chess Club"}
+        )
+        self.assertEqual(activities["Chess Club"]["participants"], before[1:])
+        self.assertIn(email, activities["Programming Class"]["participants"])
+        self.assertNotIn(
+            email, self.client.get("/activities").json()["Chess Club"]["participants"]
+        )
+        self.assertEqual(self.signup("Chess Club", email).status_code, 200)
+
+    def test_unregister_unknown_activity_returns_not_found(self):
+        before = deepcopy(activities)
+        response = self.client.delete(
+            "/activities/Unknown Club/participants",
+            params={"email": "student@mergington.edu"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"detail": "Activity not found"})
+        self.assertEqual(activities, before)
+
+    def test_unregister_missing_participant_returns_not_found(self):
+        before = deepcopy(activities)
+        response = self.client.delete(
+            "/activities/Chess Club/participants",
+            params={"email": "missing@mergington.edu"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Student is not signed up for this activity"},
+        )
+        self.assertEqual(activities, before)
